@@ -10,7 +10,6 @@ def tableCreate(name):
     c.execute("CREATE TABLE {0}(ID INTEGER PRIMARY KEY, Date TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume REAL)".format(name))
 
 def dataEntry(table_name, ID, Date, Open, High, Low, Close, Volume):
-#add field for SMA
     '''table_name: string;
     ID: int;
     Date: string; in a format 'yearmontday' (e.g. '20010314');
@@ -19,7 +18,6 @@ def dataEntry(table_name, ID, Date, Open, High, Low, Close, Volume):
     conn.commit()
     
 def fromTexttoDB(directory):
-#add field for SMA
     '''directory: string;
     from each text file in a directory extracts data and saves it in a database'''
     import os.path
@@ -42,11 +40,27 @@ def fromTexttoDB(directory):
             
             dataEntry(filee[:3], ID, Date, Open, High, Low, Close, Volume)
             
-def generateAndInsertSMA(table, SMA_period):
-    '''table: string;
+def generateAndInsertSMA(table_name, SMA_period):
+    '''table_name: string;
     SMA_period: int
-    generate SMA of a given period for a given stock (table) and inserts it to the table'''
-    c.execute("SELECT Close FROM {table} WHERE ID={ID}".format(table = table, ID = SMA_period))
-    date = c.fetchone()
-    date = date[0]
-    print date
+    generate SMA of a given period for a given stock (table_name) and populate
+    the table with SMA values'''
+    external_current = SMA_period
+    while True: 
+        c.execute("SELECT Close FROM {table} WHERE ID={ID}".format(table = table_name, ID = external_current))
+        if c.fetchone() == None:
+            break
+
+        current = external_current
+        sum_close = 0
+        for a in range(SMA_period):
+            c.execute("SELECT Close FROM {table} WHERE ID={ID}".format(table = table_name, ID = current))
+            current -= 1
+            close = c.fetchone()
+            close = close[0]
+            sum_close += close
+
+        sma = sum_close/SMA_period
+        c.execute("UPDATE {table} SET SMA{SMA}={sma} WHERE ID={ID}".format(table = table_name, SMA = SMA_period, sma = sma, ID = external_current))
+        conn.commit()
+        external_current += 1
