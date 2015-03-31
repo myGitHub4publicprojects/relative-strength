@@ -2,6 +2,7 @@ import sqlite3
 
 conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/relative-strength/GPWstocks.db')
 c = conn.cursor()
+conn.text_factory = str
 
     
 def tableCreate(name):
@@ -43,24 +44,16 @@ def fromTexttoDB(directory):
 def generateAndInsertSMA(table_name, SMA_period):
     '''table_name: string;
     SMA_period: int
-    generate SMA of a given period for a given stock (table_name) and populate
+    generates SMA of a given period for a given stock (table_name) and populate
     the table with SMA values'''
-    external_current = SMA_period
-    while True: 
-        c.execute("SELECT Close FROM {table} WHERE ID={ID}".format(table = table_name, ID = external_current))
-        if c.fetchone() == None:
-            break
-
-        current = external_current
+    c.execute("SELECT Date, Close FROM {table}".format(table = table_name))
+    date_close = c.fetchall()
+    for e in range(SMA_period -1, len(date_close)):
         sum_close = 0
-        for a in range(SMA_period):
-            c.execute("SELECT Close FROM {table} WHERE ID={ID}".format(table = table_name, ID = current))
-            current -= 1
-            close = c.fetchone()
-            close = close[0]
-            sum_close += close
-
+        counter = SMA_period - 1
+        for i in range(SMA_period):
+            sum_close += date_close[e - counter][1]
+            counter -= 1
         sma = sum_close/SMA_period
-        c.execute("UPDATE {table} SET SMA{SMA}={sma} WHERE ID={ID}".format(table = table_name, SMA = SMA_period, sma = sma, ID = external_current))
+        c.execute("UPDATE {table} SET SMA{SMA}={sma} WHERE Date={date}".format(table = table_name, SMA = SMA_period, sma = sma, date = date_close[e][0]))
         conn.commit()
-        external_current += 1
