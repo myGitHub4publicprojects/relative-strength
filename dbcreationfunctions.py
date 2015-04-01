@@ -45,7 +45,13 @@ def generateAndInsertSMA(table_name, SMA_period):
     '''table_name: string;
     SMA_period: int
     generates SMA of a given period for a given stock (table_name) and populate
-    the table with SMA values'''
+    the table with SMA values,
+    if a clumn where data is to be inserted does not existed, function creates it'''
+    # check if the column exists, if not, create it
+    c.execute("PRAGMA table_info({table})".format(table = 'atc'))
+    if 'SMA{period}'.format(period = SMA_period) not in [e[1] for e in c.fetchall()]:
+        c.execute("ALTER TABLE {table} ADD COLUMN SMA{period} REAL".format(table = table_name, period = SMA_period))
+        
     c.execute("SELECT Date, Close FROM {table}".format(table = table_name))
     date_close = c.fetchall()
     for e in range(SMA_period -1, len(date_close)):
