@@ -1,45 +1,54 @@
 import sqlite3
 
 conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/relative-strength/GPWstocks.db')
-c = conn.cursor()
 conn.text_factory = str
-
+c = conn.cursor()
     
 def tableCreate(name):
     ''' name: str
     creates table in a database'''
     c.execute("CREATE TABLE {0}(ID INTEGER PRIMARY KEY, Date TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume REAL)".format(name))
-
-def dataEntry(table_name, ID, Date, Open, High, Low, Close, Volume):
-    '''table_name: string;
-    ID: int;
-    Date: string; in a format 'yearmontday' (e.g. '20010314');
-    Open... Volume: floats;'''
-    c.execute("INSERT INTO {0} (ID, Date, Open, High, Low, Close, Volume) VALUES(?, ?, ?, ?, ?, ?, ?)".format(table_name), (ID, Date, Open, High, Low, Close, Volume))
-    conn.commit()
     
 def fromTexttoDB(directory):
     '''directory: string;
     from each text file in a directory extracts data and saves it in a database'''
     import os.path
-    for filee in os.listdir(directory):
-        tableCreate(filee[:3])
-        a = open(directory + '/' + filee)
-        ID = 0
-        for line in a:
-            if line.startswith('Date'):
-                continue
-
-            ID += 1
-            line = line.split(',')
-            Date = line[0]
-            Open = line[1]
-            High = line[2]
-            Low = line[3]
-            Close = line[4]
-            Volume = line[5]
-            
-            dataEntry(filee[:3], ID, Date, Open, High, Low, Close, Volume)
+    list_of_files = os.listdir(directory)
+    last_started = None
+    
+    #   removes table that was started in previous run and might not be filled completely
+    for filee in list_of_files:
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", ('table' + filee[:3],))
+        fetched = c.fetchone()
+        if fetched != None:
+            last_started = fetched[0] + '.txt'
+        if fetched == None:
+            if last_started != None:
+                c.execute("DROP TABLE {table_name}".format(table_name = last_started[:-4]))
+            break
+    
+    # create and fill tables starting with first file or one that corresponds to
+    # the table that was removed by previuos block                
+    if last_started == None:
+        last_started = 'table' + list_of_files[0]  
+              
+    for e in range(list_of_files.index(last_started[5:]), len(list_of_files)):
+        
+        table_name = 'table' + list_of_files[e][:3]    
+        tableCreate(table_name)
+        print list_of_files[e]
+    
+        import csv        
+        with open('/home/jakub/Documents/analizy-finansowe/wse stocks/{filee}'.format(filee = list_of_files[e]), 'rb') as input_file:
+            reader = csv.reader(input_file)
+            data = []
+            ID = 0
+            for row in reader:
+                row.insert(0, ID)
+                ID += 1
+                data.append(row[:-1])
+        c.executemany("INSERT INTO {table_name} (ID, Date, Open, High, Low, Close, Volume) VALUES (?, ?, ?, ?, ?, ?, ?)".format(table_name = 'table' + list_of_files[e][:3]), data[1:])
+        conn.commit()
             
 def generateAndInsertSMA(table_name, SMA_period):
     '''table_name: string;
