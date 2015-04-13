@@ -24,6 +24,7 @@ def fromTexttoDB(directory):
                 
         table_name = 'table' + list_of_files[e][:3]   
         with conn:
+            c = conn.cursor()
             c.execute("CREATE TABLE {table_name}(ID INTEGER PRIMARY KEY, Date TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume REAL)".format(table_name = table_name))
             c.executemany("INSERT INTO {table_name} (ID, Date, Open, High, Low, Close, Volume) VALUES (?, ?, ?, ?, ?, ?, ?)".format(table_name = table_name), data[1:])      
 
