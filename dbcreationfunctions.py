@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/relative-strength/GPWstocks.db')
+conn = sqlite3.connect('/home/jakub/Documents/testowa.db')
 conn.text_factory = str
 c = conn.cursor()
   
@@ -56,8 +56,7 @@ def tablesWithDataandSMA(table_name):
         SMA 2 to 20, from 20 to 100 every 5, from 100 to 200 every 10, 200, 250 and 300
     '''
     # list of SMAs for w given stock
-# change next line
-    list_of_smas = range(2, 10) # + range(20, 100, 5) + range(100, 200, 10) + [200, 250, 300]
+    list_of_smas = range(2, 20) + range(20, 100, 5) + range(100, 200, 10) + [200, 250, 300]
     
     #append each list of SMA values to list_of_smas_values
     list_of_smas_values = []
@@ -93,4 +92,32 @@ def tablesWithDataandSMA(table_name):
         c.execute("CREATE TABLE {new_table} (ID INTEGER PRIMARY KEY, Date TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume REAL, {smas})".format(new_table = table_name + 'withSMAs', smas = smas))
         c.executemany("INSERT INTO {new_table} (ID, Date, Open, High, Low, Close, Volume, {smas2}) VALUES ({questmarks})".format(new_table = table_name + 'withSMAs', smas2 = smas2, questmarks = questmarks), extended_data)
 
- 
+def dbChecker(directory):
+    ''' dierectory: string; checks if number of files == number of tables and 
+    checks if the number of records in each file is the same (less header)
+    as number of rows in a file that was used as a source of data'''
+    import os.path
+    # list of files in a directory without temp files:
+    list_of_files = [e for e in os.listdir(directory) if not e.endswith('~')]
+    
+    #list of tables in db
+    c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    table_list = c.fetchall()
+    
+    different = 0
+    for afile in list_of_files:
+        a = open(directory  + '/' + afile)
+        lines = len([line for line in a])
+        c.execute("SELECT MAX(ID) FROM {table_name}".format(table_name = 'table' + afile[:3]))
+        record = c.fetchone()[0]
+        if lines != record + 1:
+            different += 1
+            print 'problem in: '
+            print afile, lines, record
+    print 'tables: ', len(table_list), 'files: ', len(list_of_files)
+    if different == 0:
+        print 'done, number of lines in each file (without header line) is equal to number of records in table'
+    else:
+        print 'there is a problem with data in tables'
+    
+        
