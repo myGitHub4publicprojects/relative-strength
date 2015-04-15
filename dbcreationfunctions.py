@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('/home/jakub/Documents/testowa.db')
+conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/relative-strength/GPWstocks.db')
 conn.text_factory = str
 c = conn.cursor()
   
@@ -92,8 +92,18 @@ def tablesWithDataandSMA(table_name):
         c.execute("CREATE TABLE {new_table} (ID INTEGER PRIMARY KEY, Date TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume REAL, {smas})".format(new_table = table_name + 'withSMAs', smas = smas))
         c.executemany("INSERT INTO {new_table} (ID, Date, Open, High, Low, Close, Volume, {smas2}) VALUES ({questmarks})".format(new_table = table_name + 'withSMAs', smas2 = smas2, questmarks = questmarks), extended_data)
 
+def addSMAstoAllTables():
+    ''' for each table in a db created with fromTexttoDB creates new table with 
+    tablesWithDataandSMA, removes the original table'''
+    c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    table_list = [e[0] for e in c.fetchall()]
+    for table in table_list:
+        tablesWithDataandSMA(table)
+        c.execute("DROP TABLE {table}".format(table = table))
+        
 def dbChecker(directory):
-    ''' dierectory: string; checks if number of files == number of tables and 
+    ''' dierectory: string; patch to the directory with files containing data,
+    checks if number of files == number of tables, 
     checks if the number of records in each file is the same (less header)
     as number of rows in a file that was used as a source of data'''
     import os.path
