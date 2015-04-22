@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/relative-strength/GPWstocks.db')
+conn = sqlite3.connect('/home/jakub/Documents/analizy-finansowe/databases/GPWstocks.db')
 conn.text_factory = str
 c = conn.cursor()
   
@@ -130,4 +130,3 @@ def dbChecker(directory):
     else:
         print 'there is a problem with data in tables'
     
-        
